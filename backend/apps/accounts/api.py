@@ -60,7 +60,7 @@ class VerifyDeepLinkAPI(View):
                 }, status=404)
 
             # Chat ID ni saqlash
-            set_telegram_chat_id(user, chat_id)
+            set_telegram_chat_id(user.id, chat_id)
 
             # OTP yaratish
             otp = create_otp_for_user(user_id)
@@ -78,10 +78,9 @@ class VerifyDeepLinkAPI(View):
                 'error': 'Invalid JSON'
             }, status=400)
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=500)
+            import traceback
+            traceback.print_exc()  # To'liq xatolikni chiqarish
+            return JsonResponse({'error': str(e)}, status=500)
 
 
 @method_decorator([csrf_exempt, require_bot_token], name='dispatch')

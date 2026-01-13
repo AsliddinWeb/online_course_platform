@@ -95,11 +95,13 @@ def create_otp_for_user(user_id: int) -> OTP:
 def verify_otp(user_id: int, code: str) -> User:
     """OTP kodni tekshirish va login qilish"""
     user = get_user_by_id(user_id)
+    print(f"DEBUG: user_id={user_id}, code={code}, user={user}")
 
     if not user:
         raise UserNotFoundError()
 
     otp = get_active_otp(user)
+    print(f"DEBUG: otp={otp}, otp.code={otp.code if otp else None}, otp.is_valid={otp.is_valid if otp else None}")
 
     if not otp:
         raise InvalidOTPError("Kod topilmadi. Qaytadan urinib ko'ring.")
