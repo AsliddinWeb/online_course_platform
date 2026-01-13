@@ -47,8 +47,12 @@ def update_user(user: User, **kwargs) -> User:
     return user
 
 
-def set_telegram_chat_id(user: User, chat_id: int) -> User:
+def set_telegram_chat_id(user_id: int, chat_id: int) -> User | None:
     """Userga Telegram chat ID biriktirish"""
+    user = get_user_by_id(user_id)
+    if not user:
+        return None
+
     user.telegram_chat_id = chat_id
     user.save(update_fields=['telegram_chat_id', 'updated_at'])
     return user
