@@ -3,14 +3,19 @@ from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
-    CallbackQueryHandler,
+    MessageHandler,
+    ConversationHandler,
+    filters
 )
 
 from config import BOT_TOKEN
-from handlers import start_handler, help_handler
-from handlers.otp import resend_otp_handler
+from handlers.start import (
+    start_handler,
+    phone_handler,
+    cancel_handler,
+    WAITING_PHONE
+)
 
-# Logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -19,21 +24,25 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
-    """Bot ni ishga tushirish"""
+    """Bot ishga tushirish"""
+    app = Application.builder().token(BOT_TOKEN).build()
 
-    # Application yaratish
-    application = Application.builder().token(BOT_TOKEN).build()
+    # Conversation handler
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start_handler)],
+        states={
+            WAITING_PHONE: [
+                MessageHandler(filters.CONTACT, phone_handler),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, phone_handler),
+            ],
+        },
+        fallbacks=[CommandHandler("cancel", cancel_handler)],
+    )
 
-    # Command handlers
-    application.add_handler(CommandHandler("start", start_handler))
-    application.add_handler(CommandHandler("help", help_handler))
+    app.add_handler(conv_handler)
 
-    # Callback query handlers
-    application.add_handler(CallbackQueryHandler(resend_otp_handler, pattern="^resend_otp$"))
-
-    # Bot ni ishga tushirish
     logger.info("Bot ishga tushdi...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == '__main__':

@@ -12,18 +12,9 @@ class BackendAPI:
             'Content-Type': 'application/json'
         }
 
-    async def verify_deep_link(self, token: str, chat_id: int) -> dict | None:
+    async def verify_deep_link(self, token: str, chat_id: int, phone_number: str) -> dict | None:
         """
         Deep link tokenni tekshirish va OTP yaratish.
-
-        Returns:
-            {
-                'success': True,
-                'otp_code': '123456',
-                'phone_number': '+998901234567',
-                'full_name': 'John Doe'
-            }
-            or None if failed
         """
         url = f"{self.base_url}/auth/api/internal/verify-deep-link/"
 
@@ -31,13 +22,22 @@ class BackendAPI:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
                     url,
-                    json={'token': token, 'chat_id': chat_id},
+                    json={
+                        'token': token,
+                        'chat_id': chat_id,
+                        'phone_number': phone_number
+                    },
                     headers=self.headers
                 )
 
                 if response.status_code == 200:
                     return response.json()
-                return None
+
+                # Xatolik bo'lsa ham response ni qaytarish
+                try:
+                    return response.json()
+                except:
+                    return {'success': False, 'error': 'unknown'}
         except Exception as e:
             print(f"Backend API error: {e}")
             return None

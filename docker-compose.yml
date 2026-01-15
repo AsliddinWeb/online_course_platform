@@ -11,33 +11,31 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     networks:
       - app_network
-
-  redis:
-    image: redis:7-alpine
-    networks:
-      - app_network
+    restart: unless-stopped
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     volumes:
-      - ./backend:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     environment:
       - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
-      - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=${DEBUG}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
       - BOT_API_TOKEN=${BOT_API_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      - KINESCOPE_API_KEY=${KINESCOPE_API_KEY}
+      - NOTION_API_KEY=${NOTION_API_KEY}
     depends_on:
       - db
-      - redis
     networks:
       - app_network
     ports:
-      - "8000:8000"
+      - "8001:8000"
+    restart: unless-stopped
 
   telegram_bot:
     build:
@@ -53,21 +51,6 @@ services:
     networks:
       - app_network
     restart: unless-stopped
-
-  nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    volumes:
-      - static_volume:/app/staticfiles:ro
-      - media_volume:/app/media:ro
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - backend
-    networks:
-      - app_network
 
 volumes:
   postgres_data:
