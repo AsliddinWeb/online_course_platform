@@ -15,6 +15,6 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.courses.asliddin.me',
 ]
 
-# HTTPS
-SECURE_SSL_REDIRECT = True
+# HTTPS - nginx handles SSL redirect
+SECURE_SSL_REDIRECT = False
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
