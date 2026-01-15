@@ -27,6 +27,7 @@ services:
       - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
       - KINESCOPE_API_KEY=${KINESCOPE_API_KEY}
       - NOTION_API_KEY=${NOTION_API_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     depends_on:
       - db
     networks:
