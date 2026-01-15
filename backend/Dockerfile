@@ -21,12 +21,12 @@ RUN pip install --no-cache-dir -r requirements/prod.txt
 # Copy project
 COPY . .
 
-# Create non-root user
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
-USER appuser
+# Create directories and set permissions
+RUN mkdir -p /app/staticfiles /app/media /app/static && \
+    chmod -R 755 /app
 
 # Expose port
 EXPOSE 8000
 
-# Run gunicorn
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 --workers 3 config.wsgi:application"]
+# Run
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn --bind 0.0.0.0:8000 --workers 3 config.wsgi:application"]
