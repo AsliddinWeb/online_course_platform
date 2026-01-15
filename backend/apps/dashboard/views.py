@@ -370,7 +370,8 @@ class StudentEditView(AdminRequiredMixin, View):
         student = get_object_or_404(User, pk=pk, role=User.Role.STUDENT)
 
         full_name = request.POST.get('full_name', '').strip()
-        phone_number = request.POST.get('phone_number', '').strip()
+        phone_number = f"+998{request.POST.get('phone_number', '').strip()}"
+
         group_id = request.POST.get('group_id') or None
 
         if not full_name or not phone_number:
@@ -603,3 +604,259 @@ class AdminDeleteView(SuperAdminRequiredMixin, View):
         admin.save()
         messages.success(request, f"'{admin.full_name}' o'chirildi")
         return redirect('dashboard:admin_list')
+
+
+# ============== QUIZZES ==============
+
+from apps.quizzes.models import Quiz, Question, Answer
+from apps.quizzes.selectors import (
+    get_all_quizzes, get_quiz_by_id, get_quiz_with_questions,
+    get_question_by_id
+)
+from apps.quizzes.services import (
+    create_quiz, update_quiz, delete_quiz,
+    create_question, update_question, delete_question,
+    create_answer, update_answer, delete_answer,
+    set_correct_answer
+)
+
+
+class QuizListView(AdminRequiredMixin, View):
+    """Testlar ro'yxati"""
+    template_name = 'admin_panel/quizzes/list.html'
+
+    def get(self, request):
+        quizzes = get_all_quizzes()
+        return render(request, self.template_name, {'quizzes': quizzes})
+
+
+class QuizCreateView(AdminRequiredMixin, View):
+    """Yangi test yaratish"""
+    template_name = 'admin_panel/quizzes/form.html'
+
+    def get(self, request):
+        # Faqat quizsi yo'q darslarni ko'rsatish
+        lessons = Lesson.objects.filter(
+            is_active=True
+        ).exclude(
+            quiz__isnull=False
+        ).order_by('order')
+
+        return render(request, self.template_name, {'lessons': lessons})
+
+    def post(self, request):
+        lesson_id = request.POST.get('lesson_id')
+        title = request.POST.get('title', '').strip()
+        passing_score = request.POST.get('passing_score', 70)
+        max_attempts = request.POST.get('max_attempts', 3)
+
+        lessons = Lesson.objects.filter(
+            is_active=True
+        ).exclude(quiz__isnull=False).order_by('order')
+
+        if not lesson_id or not title:
+            messages.error(request, "Barcha maydonlarni to'ldiring")
+            return render(request, self.template_name, {'lessons': lessons})
+
+        quiz = create_quiz(
+            lesson_id=int(lesson_id),
+            title=title,
+            passing_score=int(passing_score),
+            max_attempts=int(max_attempts)
+        )
+
+        messages.success(request, f"'{title}' testi yaratildi")
+        return redirect('dashboard:quiz_detail', pk=quiz.pk)
+
+
+class QuizDetailView(AdminRequiredMixin, View):
+    """Test tafsilotlari va savollar"""
+    template_name = 'admin_panel/quizzes/detail.html'
+
+    def get(self, request, pk):
+        quiz = get_quiz_with_questions(pk)
+
+        if not quiz:
+            messages.error(request, "Test topilmadi")
+            return redirect('dashboard:quiz_list')
+
+        return render(request, self.template_name, {'quiz': quiz})
+
+
+class QuizEditView(AdminRequiredMixin, View):
+    """Testni tahrirlash"""
+    template_name = 'admin_panel/quizzes/form.html'
+
+    def get(self, request, pk):
+        quiz = get_quiz_by_id(pk)
+        if not quiz:
+            messages.error(request, "Test topilmadi")
+            return redirect('dashboard:quiz_list')
+
+        return render(request, self.template_name, {'quiz': quiz})
+
+    def post(self, request, pk):
+        quiz = get_quiz_by_id(pk)
+        if not quiz:
+            messages.error(request, "Test topilmadi")
+            return redirect('dashboard:quiz_list')
+
+        title = request.POST.get('title', '').strip()
+        passing_score = request.POST.get('passing_score', 70)
+        max_attempts = request.POST.get('max_attempts', 3)
+        is_active = request.POST.get('is_active') == 'on'
+
+        if not title:
+            messages.error(request, "Test nomini kiriting")
+            return render(request, self.template_name, {'quiz': quiz})
+
+        update_quiz(
+            pk,
+            title=title,
+            passing_score=int(passing_score),
+            max_attempts=int(max_attempts),
+            is_active=is_active
+        )
+
+        messages.success(request, "O'zgarishlar saqlandi")
+        return redirect('dashboard:quiz_detail', pk=pk)
+
+
+class QuizDeleteView(AdminRequiredMixin, View):
+    """Testni o'chirish"""
+
+    def post(self, request, pk):
+        quiz = get_quiz_by_id(pk)
+        if quiz:
+            delete_quiz(pk)
+            messages.success(request, f"'{quiz.title}' o'chirildi")
+        return redirect('dashboard:quiz_list')
+
+
+class QuestionCreateView(AdminRequiredMixin, View):
+    """Yangi savol qo'shish"""
+    template_name = 'admin_panel/quizzes/question_form.html'
+
+    def get(self, request, quiz_pk):
+        quiz = get_quiz_by_id(quiz_pk)
+        if not quiz:
+            messages.error(request, "Test topilmadi")
+            return redirect('dashboard:quiz_list')
+
+        return render(request, self.template_name, {'quiz': quiz})
+
+    def post(self, request, quiz_pk):
+        quiz = get_quiz_by_id(quiz_pk)
+        if not quiz:
+            messages.error(request, "Test topilmadi")
+            return redirect('dashboard:quiz_list')
+
+        text = request.POST.get('text', '').strip()
+        order = request.POST.get('order', 0)
+
+        if not text:
+            messages.error(request, "Savol matnini kiriting")
+            return render(request, self.template_name, {'quiz': quiz})
+
+        # Savol yaratish
+        question = create_question(
+            quiz_id=quiz_pk,
+            text=text,
+            order=int(order) if order else 0
+        )
+
+        # Javoblarni yaratish
+        for i in range(1, 5):
+            answer_text = request.POST.get(f'answer_{i}', '').strip()
+            is_correct = request.POST.get('correct_answer') == str(i)
+
+            if answer_text:
+                create_answer(
+                    question_id=question.id,
+                    text=answer_text,
+                    is_correct=is_correct
+                )
+
+        messages.success(request, "Savol qo'shildi")
+        return redirect('dashboard:quiz_detail', pk=quiz_pk)
+
+
+class QuestionEditView(AdminRequiredMixin, View):
+    """Savolni tahrirlash"""
+    template_name = 'admin_panel/quizzes/question_form.html'
+
+    def get(self, request, quiz_pk, question_pk):
+        quiz = get_quiz_by_id(quiz_pk)
+        question = get_question_by_id(question_pk)
+
+        if not quiz or not question:
+            messages.error(request, "Savol topilmadi")
+            return redirect('dashboard:quiz_list')
+
+        # Javoblarni list qilib tayyorlash
+        answers_list = list(question.answers.all())
+        # 4 tagacha to'ldirish
+        while len(answers_list) < 4:
+            answers_list.append(None)
+
+        # To'g'ri javob indeksini topish
+        correct_index = 1
+        for i, ans in enumerate(answers_list):
+            if ans and ans.is_correct:
+                correct_index = i + 1
+                break
+
+        return render(request, self.template_name, {
+            'quiz': quiz,
+            'question': question,
+            'answers_list': answers_list,
+            'correct_index': correct_index
+        })
+
+    def post(self, request, quiz_pk, question_pk):
+        quiz = get_quiz_by_id(quiz_pk)
+        question = get_question_by_id(question_pk)
+
+        if not quiz or not question:
+            messages.error(request, "Savol topilmadi")
+            return redirect('dashboard:quiz_list')
+
+        text = request.POST.get('text', '').strip()
+        order = request.POST.get('order', 0)
+
+        if not text:
+            messages.error(request, "Savol matnini kiriting")
+            return render(request, self.template_name, {
+                'quiz': quiz,
+                'question': question
+            })
+
+        # Savolni yangilash
+        update_question(question_pk, text=text, order=int(order) if order else 0)
+
+        # Mavjud javoblarni o'chirish
+        question.answers.all().delete()
+
+        # Yangi javoblarni yaratish
+        for i in range(1, 5):
+            answer_text = request.POST.get(f'answer_{i}', '').strip()
+            is_correct = request.POST.get('correct_answer') == str(i)
+
+            if answer_text:
+                create_answer(
+                    question_id=question_pk,
+                    text=answer_text,
+                    is_correct=is_correct
+                )
+
+        messages.success(request, "Savol yangilandi")
+        return redirect('dashboard:quiz_detail', pk=quiz_pk)
+
+
+class QuestionDeleteView(AdminRequiredMixin, View):
+    """Savolni o'chirish"""
+
+    def post(self, request, quiz_pk, question_pk):
+        delete_question(question_pk)
+        messages.success(request, "Savol o'chirildi")
+        return redirect('dashboard:quiz_detail', pk=quiz_pk)

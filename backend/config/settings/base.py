@@ -132,3 +132,9 @@ TELEGRAM_BOT_USERNAME = env('TELEGRAM_BOT_USERNAME', default='your_bot')
 # Session
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 1 hafta
+
+# Kinescope (video hosting)
+KINESCOPE_API_KEY = env('KINESCOPE_API_KEY', default='')
+
+# Notion (dars materiallari)
+NOTION_API_KEY = env('NOTION_API_KEY', default='')

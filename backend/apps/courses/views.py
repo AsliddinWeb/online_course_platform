@@ -143,12 +143,32 @@ class LessonDetailView(StudentRequiredMixin, View):
         if next_lesson and progress and progress.is_completed:
             can_access_next = can_user_access_lesson(user, next_lesson)
 
+        # Notion content olish
+        notion_content = ""
+        if lesson.notion_page_id:
+            try:
+                from integrations.notion import get_lesson_content
+                notion_content = get_lesson_content(lesson)
+            except Exception as e:
+                print(f"Notion content error: {e}")
+
+        # Kinescope secure URL
+        kinescope_embed_url = ""
+        if lesson.kinescope_video_id:
+            try:
+                from integrations.kinescope import get_secure_embed_url
+                kinescope_embed_url = get_secure_embed_url(lesson.kinescope_video_id, user.id)
+            except Exception:
+                kinescope_embed_url = f"https://kinescope.io/embed/{lesson.kinescope_video_id}"
+
         context = {
             'lesson': lesson,
             'progress': progress,
             'prev_lesson': prev_lesson,
             'next_lesson': next_lesson,
             'can_access_next': can_access_next,
+            'notion_content': notion_content,
+            'kinescope_embed_url': kinescope_embed_url,
         }
 
         return render(request, self.template_name, context)

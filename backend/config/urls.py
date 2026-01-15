@@ -13,6 +13,9 @@ urlpatterns = [
     # Dashboard (admin panel)
     path('dashboard/', include('apps.dashboard.urls', namespace='dashboard')),
 
+    # Quizzes (student)
+    path('quizzes/', include('apps.quizzes.urls', namespace='quizzes')),
+
     # Student panel
     path('', include('apps.courses.urls', namespace='student')),
 ]

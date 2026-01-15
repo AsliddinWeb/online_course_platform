@@ -63,7 +63,7 @@
             </div>
 
             <!-- OTP Form -->
-            <form method="post" @submit="loading = true">
+            <form method="post" action="{% url 'accounts:verify_otp' %}" @submit="loading = true">
                 {% csrf_token %}
 
                 <div class="mb-6">

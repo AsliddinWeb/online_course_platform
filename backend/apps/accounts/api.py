@@ -26,21 +26,19 @@ def require_bot_token(view_func):
 
 @method_decorator([csrf_exempt, require_bot_token], name='dispatch')
 class VerifyDeepLinkAPI(View):
-    """
-    Deep link tokenni tekshirish va OTP yaratish
-    Bot: User start bosganda shu API ga so'rov yuboradi
-    """
+    """Deep link + telefon tekshirish va OTP yaratish"""
 
     def post(self, request):
         try:
             data = json.loads(request.body)
             token = data.get('token')
             chat_id = data.get('chat_id')
+            phone_number = data.get('phone_number')
 
-            if not token or not chat_id:
+            if not token or not chat_id or not phone_number:
                 return JsonResponse({
                     'success': False,
-                    'error': 'token va chat_id talab qilinadi'
+                    'error': 'token, chat_id va phone_number talab qilinadi'
                 }, status=400)
 
             # Token ni tekshirish
@@ -48,7 +46,7 @@ class VerifyDeepLinkAPI(View):
             if not user_id:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Token yaroqsiz yoki eskirgan'
+                    'error': 'invalid_token'
                 }, status=400)
 
             # User ni olish
@@ -56,14 +54,21 @@ class VerifyDeepLinkAPI(View):
             if not user:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Foydalanuvchi topilmadi'
+                    'error': 'user_not_found'
                 }, status=404)
+
+            # Telefon raqamni tekshirish
+            if user.phone_number != phone_number:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'phone_mismatch'
+                }, status=400)
 
             # Chat ID ni saqlash
             set_telegram_chat_id(user.id, chat_id)
 
             # OTP yaratish
-            otp = create_otp_for_user(user_id)
+            otp = create_otp_for_user(user.id)
 
             return JsonResponse({
                 'success': True,
@@ -75,12 +80,10 @@ class VerifyDeepLinkAPI(View):
         except json.JSONDecodeError:
             return JsonResponse({
                 'success': False,
-                'error': 'Invalid JSON'
+                'error': 'invalid_json'
             }, status=400)
         except Exception as e:
-            import traceback
-            traceback.print_exc()  # To'liq xatolikni chiqarish
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @method_decorator([csrf_exempt, require_bot_token], name='dispatch')

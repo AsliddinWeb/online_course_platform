@@ -36,6 +36,20 @@ urlpatterns = [
     path('lessons/<int:pk>/edit/', views.LessonEditView.as_view(), name='lesson_edit'),
     path('lessons/<int:pk>/delete/', views.LessonDeleteView.as_view(), name='lesson_delete'),
 
+    # Testlar
+    path('quizzes/', views.QuizListView.as_view(), name='quiz_list'),
+    path('quizzes/create/', views.QuizCreateView.as_view(), name='quiz_create'),
+    path('quizzes/<int:pk>/', views.QuizDetailView.as_view(), name='quiz_detail'),
+    path('quizzes/<int:pk>/edit/', views.QuizEditView.as_view(), name='quiz_edit'),
+    path('quizzes/<int:pk>/delete/', views.QuizDeleteView.as_view(), name='quiz_delete'),
+
+    # Savollar
+    path('quizzes/<int:quiz_pk>/questions/create/', views.QuestionCreateView.as_view(), name='question_create'),
+    path('quizzes/<int:quiz_pk>/questions/<int:question_pk>/edit/', views.QuestionEditView.as_view(),
+         name='question_edit'),
+    path('quizzes/<int:quiz_pk>/questions/<int:question_pk>/delete/', views.QuestionDeleteView.as_view(),
+         name='question_delete'),
+
     # Adminlar
     path('admins/', views.AdminListView.as_view(), name='admin_list'),
     path('admins/create/', views.AdminCreateView.as_view(), name='admin_create'),
