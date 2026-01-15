@@ -18,6 +18,8 @@ class BackendAPI:
         """
         url = f"{self.base_url}/auth/api/internal/verify-deep-link/"
 
+        print(f"DEBUG: token={token}, chat_id={chat_id}, phone={phone_number}")  # DEBUG
+
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
