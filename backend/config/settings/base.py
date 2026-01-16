@@ -111,7 +111,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# DRF (internal API uchun)
+# DRF
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'DEFAULT_PERMISSION_CLASSES': [],
@@ -120,21 +120,21 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Bot API token (internal API himoyasi)
+# Bot API token
 BOT_API_TOKEN = env('BOT_API_TOKEN', default='')
 
 # OTP settings
-OTP_EXPIRE_SECONDS = 120  # 2 daqiqa
+OTP_EXPIRE_SECONDS = 120  # 2 minute
 
 # Telegram Bot
 TELEGRAM_BOT_USERNAME = env('TELEGRAM_BOT_USERNAME', default='your_bot')
 
 # Session
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 1 hafta
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 1 week
 
-# Kinescope (video hosting)
+# Kinescope
 KINESCOPE_API_KEY = env('KINESCOPE_API_KEY', default='')
 
-# Notion (dars materiallari)
+# Notion
 NOTION_API_KEY = env('NOTION_API_KEY', default='')
