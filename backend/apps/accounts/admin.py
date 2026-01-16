@@ -23,9 +23,17 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('phone_number', 'full_name', 'role', 'group'),
+            'fields': ('phone_number', 'password1', 'password2', 'full_name', 'role', 'group'),
         }),
     )
+
+    # Username o'rniga phone_number ishlatish
+    ordering = ('-created_at',)
+    
+    def get_fieldsets(self, request, obj=None):
+        if not obj:
+            return self.add_fieldsets
+        return super().get_fieldsets(request, obj)
 
 
 @admin.register(OTP)
